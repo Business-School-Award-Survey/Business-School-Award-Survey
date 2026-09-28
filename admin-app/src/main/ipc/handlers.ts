@@ -23,6 +23,7 @@ import { db, getSupabaseClient } from '../db';
 import { apiClient } from '../api';
 import { handleTutorList, previewTutorList, uploadTutors } from './parseTutors';
 //import { sendNominationEmails } from './email';
+import { generateEmailPreviews } from './email';
 import { formatError } from './ipcError';
 import { createStudentResponseHandlers } from './studentResponseHandlers';
 import { createMasterDataHandlers } from './masterDataHandlers';
@@ -420,6 +421,33 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.MASTER_DATA_UPLOADS_LIST, masterDataHandlers.list);
   ipcMain.handle(IPC_CHANNELS.MASTER_DATA_UPLOAD, masterDataHandlers.upload);
+
+  ipcMain.handle(
+    'email:preview',
+    async (
+      _event,
+      payload: {
+        staffIds?: string[]
+      },
+    ): Promise<IpcResult> => {
+      try {
+        const data = await generateEmailPreviews(
+          getSupabaseClient(),
+          payload.staffIds,
+        )
+
+        return {
+          success: true,
+          data,
+        }
+      } catch (err) {
+        return {
+          success: false,
+          error: formatError(err),
+        }
+      }
+    },
+  )
 
   // -------------------------------------------------------------------------
   // API proxy handler — keeps API keys out of the renderer
