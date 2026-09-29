@@ -86,6 +86,7 @@ const menuOptions: MenuOption[] = [
   { label: 'Master Data',   key: '/master-data',   icon: renderIcon('🗂️') },
   { label: 'Period Control', key: '/period-control', icon: renderIcon('⏰') },
   { label: 'Notifications', key: '/notifications', icon: renderIcon('🔔') },
+  { label: 'PDF Downloads', key: '/application-downloads', icon: renderIcon('📥') },
   { label: 'Data Export',   key: '/data-export',   icon: renderIcon('📤') },
 ];
 
@@ -94,6 +95,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/nominations':    'Nominations',
   '/student-responses': 'Student Responses',
   '/applications':   'Applications',
+  '/application-downloads': 'Application Downloads',
   '/master-data':    'Master Data',
   '/period-control': 'Period Control',
   '/notifications':  'Notifications',

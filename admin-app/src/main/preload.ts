@@ -19,6 +19,11 @@ import type {
   StudentResponse,
   MasterDataUploadLog,
   MasterDataUploadPayload,
+  TeachingAwardApplication,
+  TeachingAwardApplicationDownloadPayload,
+  TeachingAwardApplicationListPayload,
+  TeachingAwardApplicationsZipPayload,
+  TeachingAwardDownloadResult,
 } from '../shared/types';
 
 const bridge = {
@@ -90,6 +95,33 @@ const bridge = {
     
   getDashboardNominations(): Promise<IpcResult<DashboardNominationsSummary>> {
     return ipcRenderer.invoke(IPC_CHANNELS.DASHBOARD_NOMINATIONS) as Promise<IpcResult<DashboardNominationsSummary>>;
+  },
+
+  listTeachingAwardApplications(
+    payload: TeachingAwardApplicationListPayload = {},
+  ): Promise<IpcResult<TeachingAwardApplication[]>> {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_LIST,
+      payload,
+    ) as Promise<IpcResult<TeachingAwardApplication[]>>;
+  },
+
+  downloadTeachingAwardApplication(
+    payload: TeachingAwardApplicationDownloadPayload,
+  ): Promise<IpcResult<TeachingAwardDownloadResult>> {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.TEACHING_AWARD_APPLICATION_DOWNLOAD,
+      payload,
+    ) as Promise<IpcResult<TeachingAwardDownloadResult>>;
+  },
+
+  downloadTeachingAwardApplicationsZip(
+    payload: TeachingAwardApplicationsZipPayload,
+  ): Promise<IpcResult<TeachingAwardDownloadResult>> {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_DOWNLOAD_ZIP,
+      payload,
+    ) as Promise<IpcResult<TeachingAwardDownloadResult>>;
   },
 };
 

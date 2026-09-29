@@ -20,6 +20,9 @@ export const IPC_CHANNELS = {
   DASHBOARD_NOMINATIONS: 'dashboard:nominations',
   MASTER_DATA_UPLOAD: 'master-data:upload',
   MASTER_DATA_UPLOADS_LIST: 'master-data:uploads-list',
+  TEACHING_AWARD_APPLICATIONS_LIST: 'teaching-award-applications:list',
+  TEACHING_AWARD_APPLICATION_DOWNLOAD: 'teaching-award-applications:download',
+  TEACHING_AWARD_APPLICATIONS_DOWNLOAD_ZIP: 'teaching-award-applications:download-zip',
 
   // API proxy
   API_REQUEST: 'api:request',
@@ -174,4 +177,52 @@ export interface MasterDataUploadLog extends MasterDataUploadDraft {
   id: string;
   uploadedAt: string;
   uploadedBy: string | null;
+}
+
+export const TEACHING_AWARD_CATEGORIES = [
+  'Citation Award category',
+  'Excellence in Teaching category',
+  'Sessional Lecturer category',
+  'Early Career category',
+  'Jin-Boon Lew Tutor category',
+] as const;
+
+export type TeachingAwardCategory = (typeof TEACHING_AWARD_CATEGORIES)[number];
+
+export interface TeachingAwardApplication {
+  id: string;
+  awardPeriodId: string;
+  applicantEmail: string;
+  fullName: string;
+  category: TeachingAwardCategory;
+  originalFileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  submittedAt: string;
+}
+
+export interface TeachingAwardApplicationListPayload {
+  awardPeriodId?: string;
+}
+
+export interface TeachingAwardApplicationDownloadPayload {
+  applicationId: string;
+}
+
+export interface TeachingAwardApplicationsZipPayload {
+  awardPeriodId: string;
+  category?: TeachingAwardCategory;
+}
+
+export interface TeachingAwardDownloadFailure {
+  applicationId: string;
+  fileName: string;
+  error: string;
+}
+
+export interface TeachingAwardDownloadResult {
+  cancelled: boolean;
+  savedPath?: string;
+  downloadedCount: number;
+  failures: TeachingAwardDownloadFailure[];
 }
