@@ -24,6 +24,9 @@ import type {
   TeachingAwardApplicationListPayload,
   TeachingAwardApplicationsZipPayload,
   TeachingAwardDownloadResult,
+  TeachingAwardMagicLinkGeneratePayload,
+  TeachingAwardMagicLinkResult,
+  TeachingAwardMagicLinkTeacher,
 } from '../shared/types';
 
 const bridge = {
@@ -122,6 +125,14 @@ const bridge = {
       IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_DOWNLOAD_ZIP,
       payload,
     ) as Promise<IpcResult<TeachingAwardDownloadResult>>;
+  },
+
+  listTeachingAwardMagicLinkTeachers(): Promise<IpcResult<TeachingAwardMagicLinkTeacher[]>> {
+    return ipcRenderer.invoke(IPC_CHANNELS.TEACHING_AWARD_MAGIC_LINK_TEACHERS) as Promise<IpcResult<TeachingAwardMagicLinkTeacher[]>>;
+  },
+
+  generateTeachingAwardMagicLinks(payload: TeachingAwardMagicLinkGeneratePayload): Promise<IpcResult<TeachingAwardMagicLinkResult[]>> {
+    return ipcRenderer.invoke(IPC_CHANNELS.TEACHING_AWARD_MAGIC_LINKS_GENERATE, payload) as Promise<IpcResult<TeachingAwardMagicLinkResult[]>>;
   },
 };
 

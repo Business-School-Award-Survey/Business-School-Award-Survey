@@ -23,6 +23,8 @@ export const IPC_CHANNELS = {
   TEACHING_AWARD_APPLICATIONS_LIST: 'teaching-award-applications:list',
   TEACHING_AWARD_APPLICATION_DOWNLOAD: 'teaching-award-applications:download',
   TEACHING_AWARD_APPLICATIONS_DOWNLOAD_ZIP: 'teaching-award-applications:download-zip',
+  TEACHING_AWARD_MAGIC_LINK_TEACHERS: 'teaching-award-magic-links:teachers',
+  TEACHING_AWARD_MAGIC_LINKS_GENERATE: 'teaching-award-magic-links:generate',
 
   // API proxy
   API_REQUEST: 'api:request',
@@ -225,4 +227,21 @@ export interface TeachingAwardDownloadResult {
   savedPath?: string;
   downloadedCount: number;
   failures: TeachingAwardDownloadFailure[];
+}
+
+export interface TeachingAwardMagicLinkTeacher {
+  staffId: string;
+  name: string;
+  available: boolean;
+}
+
+export interface TeachingAwardMagicLinkGeneratePayload {
+  staffIds: string[];
+}
+
+export interface TeachingAwardMagicLinkResult {
+  staffId: string;
+  name: string;
+  link?: string;
+  error?: string;
 }

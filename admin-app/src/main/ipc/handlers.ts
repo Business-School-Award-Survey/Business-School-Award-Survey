@@ -24,6 +24,7 @@ import { apiClient } from '../api';
 import { handleTutorList, previewTutorList, uploadTutors } from './parseTutors';
 //import { sendNominationEmails } from './email';
 import { formatError } from './ipcError';
+import { registerMagicLinkHandlers } from './magicLinkHandlers';
 import { createStudentResponseHandlers } from './studentResponseHandlers';
 import { createMasterDataHandlers } from './masterDataHandlers';
 import { createSupabaseMasterDataUploadLogStore } from './masterDataUploadLogStore';
@@ -200,6 +201,7 @@ function validatePeriodPayload(payload: AwardPeriodSavePayload): void {
 
 export function registerIpcHandlers(): void {
   const supabaseClient = getSupabaseClient();
+  registerMagicLinkHandlers(supabaseClient);
   const studentResponseHandlers = createStudentResponseHandlers(supabaseClient);
   const masterDataUploadLogStore = createSupabaseMasterDataUploadLogStore(
     supabaseClient,
