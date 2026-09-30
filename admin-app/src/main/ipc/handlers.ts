@@ -25,9 +25,11 @@ import { handleTutorList, previewTutorList, uploadTutors } from './parseTutors';
 //import { sendNominationEmails } from './email';
 import { generateEmailPreviews } from './email';
 import { formatError } from './ipcError';
+import { registerMagicLinkHandlers } from './magicLinkHandlers';
 import { createStudentResponseHandlers } from './studentResponseHandlers';
 import { createMasterDataHandlers } from './masterDataHandlers';
 import { createSupabaseMasterDataUploadLogStore } from './masterDataUploadLogStore';
+import { createApplicationDownloadHandlers } from './applicationDownloadHandlers';
 
 interface AwardPeriodRow {
   id: string;
@@ -200,6 +202,7 @@ function validatePeriodPayload(payload: AwardPeriodSavePayload): void {
 
 export function registerIpcHandlers(): void {
   const supabaseClient = getSupabaseClient();
+  registerMagicLinkHandlers(supabaseClient);
   const studentResponseHandlers = createStudentResponseHandlers(supabaseClient);
   const masterDataUploadLogStore = createSupabaseMasterDataUploadLogStore(
     supabaseClient,
@@ -208,6 +211,7 @@ export function registerIpcHandlers(): void {
     supabaseClient,
     masterDataUploadLogStore,
   );
+  const applicationDownloadHandlers = createApplicationDownloadHandlers(supabaseClient);
 
   // -------------------------------------------------------------------------
   // Database handlers
@@ -363,6 +367,14 @@ export function registerIpcHandlers(): void {
           throw pendingCountError;
         }
 
+        const { count: submittedApplications, error: submittedApplicationsError } = await getSupabaseClient()
+          .from('teaching_award_applications')
+          .select('id', { count: 'exact', head: true });
+
+        if (submittedApplicationsError) {
+          throw submittedApplicationsError;
+        }
+
         const { data: nominatedTeacherRows, error: nominatedTeachersError } = await getSupabaseClient()
           .from('nominations')
           .select('scholar_id,staff_id,scholar_name');
@@ -407,7 +419,7 @@ export function registerIpcHandlers(): void {
           data: {
             totalNominations: count ?? 0,
             nominatedTeachers,
-            submittedApplications: null,
+            submittedApplications: submittedApplications ?? 0,
             lecturerEmailStatus,
             pendingNominationsToReview: pendingCount ?? 0,
             recentNominations: (data ?? []).map(row => toDashboardNomination(row as DashboardNominationRow)),
@@ -421,6 +433,18 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.MASTER_DATA_UPLOADS_LIST, masterDataHandlers.list);
   ipcMain.handle(IPC_CHANNELS.MASTER_DATA_UPLOAD, masterDataHandlers.upload);
+  ipcMain.handle(
+    IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_LIST,
+    applicationDownloadHandlers.list,
+  );
+  ipcMain.handle(
+    IPC_CHANNELS.TEACHING_AWARD_APPLICATION_DOWNLOAD,
+    applicationDownloadHandlers.download,
+  );
+  ipcMain.handle(
+    IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_DOWNLOAD_ZIP,
+    applicationDownloadHandlers.downloadZip,
+  );
 
   ipcMain.handle(
     'email:preview',

@@ -19,6 +19,14 @@ import type {
   StudentResponse,
   MasterDataUploadLog,
   MasterDataUploadPayload,
+  TeachingAwardApplication,
+  TeachingAwardApplicationDownloadPayload,
+  TeachingAwardApplicationListPayload,
+  TeachingAwardApplicationsZipPayload,
+  TeachingAwardDownloadResult,
+  TeachingAwardMagicLinkGeneratePayload,
+  TeachingAwardMagicLinkResult,
+  TeachingAwardMagicLinkTeacher,
 } from '../shared/types';
 
 const bridge = {
@@ -99,6 +107,41 @@ const bridge = {
     
   getDashboardNominations(): Promise<IpcResult<DashboardNominationsSummary>> {
     return ipcRenderer.invoke(IPC_CHANNELS.DASHBOARD_NOMINATIONS) as Promise<IpcResult<DashboardNominationsSummary>>;
+  },
+
+  listTeachingAwardApplications(
+    payload: TeachingAwardApplicationListPayload = {},
+  ): Promise<IpcResult<TeachingAwardApplication[]>> {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_LIST,
+      payload,
+    ) as Promise<IpcResult<TeachingAwardApplication[]>>;
+  },
+
+  downloadTeachingAwardApplication(
+    payload: TeachingAwardApplicationDownloadPayload,
+  ): Promise<IpcResult<TeachingAwardDownloadResult>> {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.TEACHING_AWARD_APPLICATION_DOWNLOAD,
+      payload,
+    ) as Promise<IpcResult<TeachingAwardDownloadResult>>;
+  },
+
+  downloadTeachingAwardApplicationsZip(
+    payload: TeachingAwardApplicationsZipPayload,
+  ): Promise<IpcResult<TeachingAwardDownloadResult>> {
+    return ipcRenderer.invoke(
+      IPC_CHANNELS.TEACHING_AWARD_APPLICATIONS_DOWNLOAD_ZIP,
+      payload,
+    ) as Promise<IpcResult<TeachingAwardDownloadResult>>;
+  },
+
+  listTeachingAwardMagicLinkTeachers(): Promise<IpcResult<TeachingAwardMagicLinkTeacher[]>> {
+    return ipcRenderer.invoke(IPC_CHANNELS.TEACHING_AWARD_MAGIC_LINK_TEACHERS) as Promise<IpcResult<TeachingAwardMagicLinkTeacher[]>>;
+  },
+
+  generateTeachingAwardMagicLinks(payload: TeachingAwardMagicLinkGeneratePayload): Promise<IpcResult<TeachingAwardMagicLinkResult[]>> {
+    return ipcRenderer.invoke(IPC_CHANNELS.TEACHING_AWARD_MAGIC_LINKS_GENERATE, payload) as Promise<IpcResult<TeachingAwardMagicLinkResult[]>>;
   },
 };
 

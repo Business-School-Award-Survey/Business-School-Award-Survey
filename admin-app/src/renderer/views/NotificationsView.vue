@@ -4,6 +4,128 @@
       Notifications
     </n-h2>
 
+    <!-- Teaching award Magic Links -->
+    <n-card
+      title="Teaching award Magic Links"
+      style="margin-bottom: 24px;"
+    >
+      <n-text depth="3">
+        Select teachers by staff ID, generate links, then copy and send them
+        manually. Email addresses are not shown.
+      </n-text>
+
+      <n-flex
+        :gap="12"
+        align="center"
+        wrap
+        style="margin-top: 18px;"
+      >
+        <n-select
+          v-model:value="selectedStaffIds"
+          :options="teacherOptions"
+          :loading="magicLinkTeachersLoading"
+          :disabled="magicLinksGenerating"
+          multiple
+          filterable
+          clearable
+          placeholder="Select teachers by staff ID"
+          style="flex: 1; min-width: 320px;"
+        />
+
+        <n-button
+          :loading="magicLinkTeachersLoading"
+          :disabled="magicLinksGenerating"
+          @click="loadMagicLinkTeachers"
+        >
+          Refresh teachers
+        </n-button>
+
+        <n-button
+          type="primary"
+          :loading="magicLinksGenerating"
+          :disabled="
+            magicLinksGenerating ||
+            magicLinkTeachersLoading ||
+            selectedStaffIds.length === 0
+          "
+          @click="generateMagicLinks"
+        >
+          Generate links
+        </n-button>
+      </n-flex>
+
+      <n-text
+        v-if="magicLinksGenerating"
+        depth="3"
+        style="display: block; margin-top: 14px;"
+      >
+        Generating links for {{ selectedStaffIds.length }} teacher(s).
+        Bulk processing may take some time. Please wait…
+      </n-text>
+
+      <n-text
+        v-if="
+          !magicLinkTeachersLoading &&
+          magicLinkTeachers.length === 0
+        "
+        type="warning"
+        style="display: block; margin-top: 14px;"
+      >
+        No teachers with a staff ID were found.
+      </n-text>
+
+      <div
+        v-if="magicLinkResults.length > 0"
+        class="magic-link-results"
+      >
+        <n-card
+          v-for="result in magicLinkResults"
+          :key="result.staffId"
+          size="small"
+        >
+          <n-flex
+            justify="space-between"
+            align="center"
+            :gap="12"
+          >
+            <n-text strong>
+              {{ result.name }} ({{ result.staffId }})
+            </n-text>
+
+            <n-tag
+              :type="result.link ? 'success' : 'error'"
+            >
+              {{ result.link ? 'Generated' : 'Failed' }}
+            </n-tag>
+          </n-flex>
+
+          <n-input
+            v-if="result.link"
+            :value="result.link"
+            type="textarea"
+            readonly
+            :autosize="{ minRows: 2, maxRows: 4 }"
+          />
+
+          <n-button
+            v-if="result.link"
+            block
+            style="margin-top: 10px;"
+            @click="copyMagicLink(result.link)"
+          >
+            Copy link
+          </n-button>
+
+          <n-text
+            v-else
+            type="error"
+          >
+            {{ result.error }}
+          </n-text>
+        </n-card>
+      </div>
+    </n-card>
+
     <!-- Email preparation -->
     <n-card
       title="Prepare Nomination Emails"
@@ -18,7 +140,10 @@
         Emails are not sent automatically.
       </n-alert>
 
-      <n-flex justify="space-between" align="center">
+      <n-flex
+        justify="space-between"
+        align="center"
+      >
         <div>
           <n-text strong>
             Prepare emails from approved nominations
@@ -55,7 +180,12 @@
       v-model:show="showPreview"
       preset="card"
       title="Email Preview"
-      style="width: 800px; max-width: 90vw; max-height: 80vh; overflow: hidden;"
+      style="
+        width: 800px;
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow: hidden;
+      "
     >
       <n-flex
         justify="space-between"
@@ -135,15 +265,17 @@
         </n-space>
       </n-card>
 
-      <!-- Preview -->
-      <n-scrollbar
-        style="max-height: 55vh;"
-      >
+      <!-- Email preview -->
+      <n-scrollbar style="max-height: 55vh;">
         <n-collapse>
           <n-collapse-item
             v-for="email in selectedPreviewEmails"
             :key="email.key"
-            :title="`${email.scholarName} · ${email.email || 'No email address'}`"
+            :title="
+              `${email.scholarName} · ${
+                email.email || 'No email address'
+              }`
+            "
           >
             <n-space vertical>
               <n-text strong>
@@ -180,7 +312,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+
+import {
+  MailOutline,
+} from '@vicons/ionicons5';
+
+import type {
+  SelectOption,
+} from 'naive-ui';
 
 import {
   NAlert,
@@ -194,20 +334,174 @@ import {
   NFlex,
   NH2,
   NIcon,
+  NInput,
+  NModal,
   NScrollbar,
+  NSelect,
   NSpace,
+  NTag,
   NText,
   useMessage,
 } from 'naive-ui';
 
-import {
-  MailOutline,
-} from '@vicons/ionicons5';
+import type {
+  TeachingAwardMagicLinkResult,
+  TeachingAwardMagicLinkTeacher,
+} from '../../shared/types';
 
 const message = useMessage();
 
 /* -------------------------------------------------------------------------- */
-/* Types                                                                      */
+/* Magic Link state                                                            */
+/* -------------------------------------------------------------------------- */
+
+const magicLinkTeachers =
+  ref<TeachingAwardMagicLinkTeacher[]>([]);
+
+const selectedStaffIds =
+  ref<string[]>([]);
+
+const magicLinkResults =
+  ref<TeachingAwardMagicLinkResult[]>([]);
+
+const magicLinkTeachersLoading =
+  ref(false);
+
+const magicLinksGenerating =
+  ref(false);
+
+const teacherOptions =
+  computed<SelectOption[]>(() =>
+    magicLinkTeachers.value.map(teacher => ({
+      label:
+        `${teacher.name} (${teacher.staffId})` +
+        `${teacher.available ? '' : ' — unavailable'}`,
+      value: teacher.staffId,
+      disabled: !teacher.available,
+    })),
+  );
+
+/* -------------------------------------------------------------------------- */
+/* Magic Link functions                                                        */
+/* -------------------------------------------------------------------------- */
+
+async function loadMagicLinkTeachers(): Promise<void> {
+  magicLinkTeachersLoading.value = true;
+
+  try {
+    const result =
+      await window.electronAPI.listTeachingAwardMagicLinkTeachers();
+
+    if (!result.success) {
+      throw new Error(
+        result.error || 'Failed to load teachers.',
+      );
+    }
+
+    magicLinkTeachers.value =
+      result.data ?? [];
+
+    selectedStaffIds.value =
+      selectedStaffIds.value.filter(
+        staffId =>
+          magicLinkTeachers.value.some(
+            teacher =>
+              teacher.staffId === staffId &&
+              teacher.available,
+          ),
+      );
+  } catch (error) {
+    message.error(
+      error instanceof Error
+        ? error.message
+        : 'Failed to load teachers.',
+    );
+  } finally {
+    magicLinkTeachersLoading.value = false;
+  }
+}
+
+async function generateMagicLinks(): Promise<void> {
+  if (
+    magicLinksGenerating.value ||
+    magicLinkTeachersLoading.value ||
+    selectedStaffIds.value.length === 0
+  ) {
+    return;
+  }
+
+  magicLinksGenerating.value = true;
+  magicLinkResults.value = [];
+
+  try {
+    const result =
+      await window.electronAPI.generateTeachingAwardMagicLinks({
+        staffIds: [
+          ...selectedStaffIds.value,
+        ],
+      });
+
+    if (!result.success) {
+      throw new Error(
+        result.error ||
+          'Failed to generate Magic Links.',
+      );
+    }
+
+    magicLinkResults.value =
+      result.data ?? [];
+
+    const successCount =
+      magicLinkResults.value.filter(
+        item => Boolean(item.link),
+      ).length;
+
+    const failureCount =
+      magicLinkResults.value.length -
+      successCount;
+
+    const summary =
+      `Completed: ${successCount} succeeded, ` +
+      `${failureCount} failed. No email was sent.`;
+
+    if (successCount === 0) {
+      message.error(
+        `No Magic Links were generated. ${summary}`,
+      );
+    } else if (failureCount > 0) {
+      message.warning(summary);
+    } else {
+      message.success(summary);
+    }
+  } catch (error) {
+    message.error(
+      error instanceof Error
+        ? error.message
+        : 'Failed to generate Magic Links.',
+    );
+  } finally {
+    magicLinksGenerating.value = false;
+  }
+}
+
+async function copyMagicLink(
+  link: string,
+): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(link);
+
+    message.success(
+      'Magic Link copied.',
+    );
+  } catch {
+    message.error(
+      'Could not copy the Magic Link.',
+    );
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Email preview types                                                         */
 /* -------------------------------------------------------------------------- */
 
 interface EmailPreview {
@@ -231,39 +525,45 @@ interface EmailRecipient {
 }
 
 /* -------------------------------------------------------------------------- */
-/* State                                                                      */
+/* Email state                                                                 */
 /* -------------------------------------------------------------------------- */
 
-const loading = ref(false);
+const loading =
+  ref(false);
 
-const showPreview = ref(false);
+const showPreview =
+  ref(false);
 
-const previewEmails = ref<EmailPreview[]>([]);
+const previewEmails =
+  ref<EmailPreview[]>([]);
 
-const recipients = ref<EmailRecipient[]>([]);
+const recipients =
+  ref<EmailRecipient[]>([]);
 
 /* -------------------------------------------------------------------------- */
-/* Computed values                                                            */
+/* Email computed values                                                       */
 /* -------------------------------------------------------------------------- */
 
-const selectedRecipientCount = computed(() =>
-  recipients.value.filter(
-    recipient => recipient.selected,
-  ).length,
-);
+const selectedRecipientCount =
+  computed(() =>
+    recipients.value.filter(
+      recipient => recipient.selected,
+    ).length,
+  );
 
-const selectedPreviewEmails = computed(() =>
-  previewEmails.value.filter(email =>
-    recipients.value.some(
-      recipient =>
-        recipient.key === email.key &&
-        recipient.selected,
+const selectedPreviewEmails =
+  computed(() =>
+    previewEmails.value.filter(email =>
+      recipients.value.some(
+        recipient =>
+          recipient.key === email.key &&
+          recipient.selected,
+      ),
     ),
-  ),
-);
+  );
 
 /* -------------------------------------------------------------------------- */
-/* Prepare emails                                                             */
+/* Prepare emails                                                              */
 /* -------------------------------------------------------------------------- */
 
 async function prepareEmails(): Promise<void> {
@@ -275,7 +575,8 @@ async function prepareEmails(): Promise<void> {
 
     if (!result.success) {
       message.error(
-        result.error ?? 'Failed to prepare emails.',
+        result.error ??
+          'Failed to prepare emails.',
       );
 
       return;
@@ -296,16 +597,19 @@ async function prepareEmails(): Promise<void> {
       return;
     }
 
-    previewEmails.value = emails;
+    previewEmails.value =
+      emails;
 
-    recipients.value = emails.map(email => ({
-      key: email.key,
-      staffId: email.staffId,
-      scholarName: email.scholarName,
-      email: email.email,
-      nominationCount: email.nominationCount,
-      selected: true,
-    }));
+    recipients.value =
+      emails.map(email => ({
+        key: email.key,
+        staffId: email.staffId,
+        scholarName: email.scholarName,
+        email: email.email,
+        nominationCount:
+          email.nominationCount,
+        selected: true,
+      }));
 
     showPreview.value = true;
 
@@ -324,19 +628,24 @@ async function prepareEmails(): Promise<void> {
 }
 
 /* -------------------------------------------------------------------------- */
-/* CSV export                                                                 */
+/* CSV export                                                                  */
 /* -------------------------------------------------------------------------- */
 
 function csvEscape(
   value: string | number | null,
 ): string {
-  const text = String(value ?? '');
+  const text =
+    String(value ?? '');
 
-  return `"${text.replace(/"/g, '""')}"`;
+  return `"${text.replace(
+    /"/g,
+    '""',
+  )}"`;
 }
 
 function exportCSV(): void {
-  const emails = selectedPreviewEmails.value;
+  const emails =
+    selectedPreviewEmails.value;
 
   if (emails.length === 0) {
     message.info(
@@ -354,13 +663,16 @@ function exportCSV(): void {
     'Body',
   ];
 
-  const rows = emails.map(email => [
-    csvEscape(email.scholarName),
-    csvEscape(email.email),
-    csvEscape(email.subject),
-    csvEscape(email.nominationCount),
-    csvEscape(email.body),
-  ]);
+  const rows =
+    emails.map(email => [
+      csvEscape(email.scholarName),
+      csvEscape(email.email),
+      csvEscape(email.subject),
+      csvEscape(
+        email.nominationCount,
+      ),
+      csvEscape(email.body),
+    ]);
 
   const csv = [
     headers.map(csvEscape),
@@ -369,16 +681,20 @@ function exportCSV(): void {
     .map(row => row.join(','))
     .join('\r\n');
 
-  const blob = new Blob(
-    [csv],
-    {
-      type: 'text/csv;charset=utf-8;',
-    },
-  );
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          'text/csv;charset=utf-8;',
+      },
+    );
 
-  const url = URL.createObjectURL(blob);
+  const url =
+    URL.createObjectURL(blob);
 
-  const link = document.createElement('a');
+  const link =
+    document.createElement('a');
 
   link.href = url;
 
@@ -399,10 +715,24 @@ function exportCSV(): void {
     `${emails.length} email(s) exported.`,
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Load Magic Link teachers                                                    */
+/* -------------------------------------------------------------------------- */
+
+onMounted(() => {
+  void loadMagicLinkTeachers();
+});
 </script>
 
 <style scoped>
 .notifications-view {
   max-width: 1100px;
+}
+
+.magic-link-results {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
 }
 </style>

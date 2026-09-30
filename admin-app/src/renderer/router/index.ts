@@ -48,6 +48,11 @@ const routes: RouteRecordRaw[] = [
         name: 'data-export',
         component: () => import('../views/DataExportView.vue'),
       },
+      {
+        path: '/application-downloads',
+        name: 'application-downloads',
+        component: () => import('../views/ApplicationDownloadsView.vue'),
+      },
     ],
   },
 ];
