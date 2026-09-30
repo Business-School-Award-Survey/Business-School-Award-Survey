@@ -89,10 +89,6 @@ export function registerMagicLinkHandlers(client: SupabaseClient): void {
         if (!teacher) { results.push({ staffId, name: staffId, error: 'Teacher was not found.' }); continue; }
         if (!teacher.available) { results.push({ staffId, name: teacher.name, error: teacher.issue || 'The stored email data is inconsistent.' }); continue; }
         const email = teacher.email || buildSyntheticEmail(staffId);
-        if (!teacher.email) {
-          const { error: emailUpdateError } = await client.from('scholars').update({ email }).eq('staff_id', staffId);
-          if (emailUpdateError) { results.push({ staffId, name: teacher.name, error: `Could not save the generated email: ${formatError(emailUpdateError)}` }); continue; }
-        }
         const invitationValues = { award_period_id: activePeriod.id, email, teacher_name: teacher.name, invited_at: generatedAt, expires_at: activePeriod.application_close_at, staff_id: staffId };
         const { data: existingInvitationData, error: invitationLookupError } = await client.from('teaching_award_invitations').select('id').eq('award_period_id', activePeriod.id).eq('staff_id', staffId).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (invitationLookupError) { results.push({ staffId, name: teacher.name, error: `Could not check the invitation record: ${formatError(invitationLookupError)}` }); continue; }
