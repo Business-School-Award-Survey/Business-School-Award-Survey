@@ -185,14 +185,14 @@
       color: #8f2d24;
     }
     .access-message p { margin: 3px 0 0; }
-    .submission-status { margin-top: 46px; } /* 中文注释：为已有提交提示区域保留与原表单一致的顶部间距。 */
-    .submission-card { margin-top: 14px; padding: 18px 20px; border: 1px solid #d8dde5; border-radius: 6px; background: #f8f9fa; } /* 中文注释：使用方框展示查看已有提交的入口和详细内容。 */
-    .submission-card button { margin-top: 14px; } /* 中文注释：让查看和修改按钮与说明文字保持清晰间距。 */
-    .submission-details dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 18px; margin: 18px 0 0; } /* 中文注释：把上次提交内容整理为易读的两列信息。 */
-    .submission-details dt { color: #6f757e; font-weight: 600; } /* 中文注释：弱化字段名称并保留足够辨识度。 */
-    .submission-details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; } /* 中文注释：避免较长文件名或链接撑破方框。 */
-    .submission-details .secondary-button { margin-right: 12px; background: #596579; } /* 中文注释：区分修改申请按钮和主要提交按钮。 */
-    .submission-details .secondary-button:hover { background: #465164; } /* 中文注释：为修改申请按钮提供明确悬停反馈。 */
+    .submission-status { margin-top: 46px; }
+    .submission-card { margin-top: 14px; padding: 18px 20px; border: 1px solid #d8dde5; border-radius: 6px; background: #f8f9fa; }
+    .submission-card button { margin-top: 14px; }
+    .submission-details dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 18px; margin: 18px 0 0; }
+    .submission-details dt { color: #6f757e; font-weight: 600; }
+    .submission-details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+    .submission-details .secondary-button { margin-right: 12px; background: #596579; }
+    .submission-details .secondary-button:hover { background: #465164; }
     [hidden] { display: none !important; }
     @media (max-width: 640px) {
       body { background: #fff; }
@@ -200,7 +200,7 @@
       form { margin-top: 46px; }
       .options, .actions { margin-left: 0; }
       .actions { align-items: flex-start; flex-direction: column; }
-      .submission-details dl { grid-template-columns: 1fr; gap: 4px; } /* 中文注释：小屏幕改为单列，避免详情区域过窄。 */
+      .submission-details dl { grid-template-columns: 1fr; gap: 4px; }
       button { width: 100%; padding: 14px; }
     }
   </style>
@@ -224,22 +224,22 @@
       <p id="accessDetail">Please wait while your secure link is verified.</p>
     </div>
 
-    <section class="submission-status" id="existingSubmission" hidden> <!-- 中文注释：已有申请时显示状态和查看入口。 -->
-      <strong>Application already submitted</strong> <!-- 中文注释：明确提示当前邀请已经保存过申请。 -->
-      <div class="submission-card"> <!-- 中文注释：使用方框承载查看提交入口及上次提交详情。 -->
-        <p id="existingSubmissionSummary">A saved application is available.</p> <!-- 中文注释：向教师说明可以查看上次保存的内容。 -->
-        <button type="button" id="viewSubmissionButton">View submission</button> <!-- 中文注释：点击后展开上次提交内容。 -->
-        <div class="submission-details" id="submissionDetails" hidden> <!-- 中文注释：默认隐藏具体内容，减少页面信息负担。 -->
-          <dl> <!-- 中文注释：以字段列表展示不可编辑的上次提交摘要。 -->
-            <dt>Full name</dt><dd id="submittedFullName"></dd> <!-- 中文注释：显示该邀请绑定的教师姓名。 -->
-            <dt>Category</dt><dd id="submittedCategory"></dd> <!-- 中文注释：显示上次选择的申请类别。 -->
-            <dt>PDF file</dt><dd><a id="submittedFileLink" href="#" target="_blank" rel="noopener">View submitted PDF</a></dd> <!-- 中文注释：通过后台生成的短时效链接查看上次 PDF。 -->
-            <dt>Submitted at</dt><dd id="submittedAt"></dd> <!-- 中文注释：显示当前保存版本的提交时间。 -->
-          </dl> <!-- 中文注释：结束上次提交字段列表。 -->
-          <button type="button" class="secondary-button" id="editApplicationButton">Edit application</button> <!-- 中文注释：进入修改模式并复用原申请表。 -->
-        </div> <!-- 中文注释：结束已有提交详情区域。 -->
-      </div> <!-- 中文注释：结束已有提交方框。 -->
-    </section> <!-- 中文注释：结束已有提交状态区域。 -->
+    <section class="submission-status" id="existingSubmission" hidden>
+      <strong>Application already submitted</strong>
+      <div class="submission-card">
+        <p id="existingSubmissionSummary">A saved application is available.</p>
+        <button type="button" id="viewSubmissionButton">View submission</button>
+        <div class="submission-details" id="submissionDetails" hidden>
+          <dl>
+            <dt>Full name</dt><dd id="submittedFullName"></dd>
+            <dt>Category</dt><dd id="submittedCategory"></dd>
+            <dt>PDF file</dt><dd><a id="submittedFileLink" href="#" target="_blank" rel="noopener">View submitted PDF</a></dd>
+            <dt>Submitted at</dt><dd id="submittedAt"></dd>
+          </dl>
+          <button type="button" class="secondary-button" id="editApplicationButton">Edit application</button>
+        </div>
+      </div>
+    </section>
 
     <form id="awardForm" novalidate hidden>
       <fieldset>
@@ -276,7 +276,7 @@
       </fieldset>
 
       <div class="actions">
-        <button type="submit" id="submitButton">Submit application</button> <!-- 中文注释：进入修改模式后由脚本切换为更新申请文案。 -->
+        <button type="submit" id="submitButton">Submit application</button>
         <span class="note">Your response will only be used for this award application.</span>
       </div>
     </form>
@@ -291,6 +291,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./js/config.js"></script>
-  <script src="./js/teaching-awards-form.js?v=20260930-3"></script> <!-- 中文注释：更新版本参数，强制浏览器丢弃仍会直接显示旧表单的缓存脚本。 -->
+  <script src="./js/teaching-awards-form.js?v=20260930-3"></script>
 </body>
 </html>
