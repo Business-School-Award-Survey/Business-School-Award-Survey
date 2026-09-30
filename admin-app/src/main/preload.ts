@@ -90,6 +90,15 @@ const bridge = {
   return ipcRenderer.invoke('email:send', payload) as Promise<IpcResult>;
   },
 
+  generateEmailPreviews(payload?: {
+    staffIds?: string[];
+  }): Promise<IpcResult> {
+    return ipcRenderer.invoke(
+      'email:preview',
+      payload ?? {},
+    ) as Promise<IpcResult>;
+  },
+
   updateStudentResponseStatus(
     payload: StudentResponseStatusUpdatePayload,
   ): Promise<IpcResult<StudentResponse>> {
