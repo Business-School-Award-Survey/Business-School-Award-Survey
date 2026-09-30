@@ -54,14 +54,12 @@ function buildEmailBody(
 ): string {
   const comments = nominations
     .map((nomination, index) => {
-      const student = cleanText(nomination.student_name)
       const unit = cleanText(nomination.unit_code)
       const teachingPeriod = cleanText(nomination.teaching_period)
       const comment = cleanText(nomination.statement_support)
 
       return [
         `${index + 1}.`,
-        `Student: ${student || 'Not provided'}`,
         `Unit: ${unit || 'Not provided'}`,
         `Teaching period: ${teachingPeriod || 'Not provided'}`,
         `Comment: ${comment || 'No supporting comment was provided.'}`,
