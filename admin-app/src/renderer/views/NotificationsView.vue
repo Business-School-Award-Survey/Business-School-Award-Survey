@@ -6,10 +6,13 @@
     <n-card title="Teaching award Magic Links" style="margin-bottom: 24px;">
       <n-text depth="3">Select teachers by staff ID, generate links, then copy and send them manually. Email addresses are not shown.</n-text>
       <n-flex :gap="12" align="center" wrap style="margin-top: 18px;">
-        <n-select v-model:value="selectedStaffIds" :options="teacherOptions" :loading="magicLinkTeachersLoading" multiple filterable clearable placeholder="Select teachers by staff ID" style="flex: 1; min-width: 320px;" />
-        <n-button :loading="magicLinkTeachersLoading" @click="loadMagicLinkTeachers">Refresh teachers</n-button>
-        <n-button type="primary" :loading="magicLinksGenerating" :disabled="selectedStaffIds.length === 0" @click="generateMagicLinks">Generate links</n-button>
+        <n-select v-model:value="selectedStaffIds" :options="teacherOptions" :loading="magicLinkTeachersLoading" :disabled="magicLinksGenerating" multiple filterable clearable placeholder="Select teachers by staff ID" style="flex: 1; min-width: 320px;" />
+        <n-button :loading="magicLinkTeachersLoading" :disabled="magicLinksGenerating" @click="loadMagicLinkTeachers">Refresh teachers</n-button>
+        <n-button type="primary" :loading="magicLinksGenerating" :disabled="magicLinksGenerating || magicLinkTeachersLoading || selectedStaffIds.length === 0" @click="generateMagicLinks">Generate links</n-button>
       </n-flex>
+      <n-text v-if="magicLinksGenerating" depth="3" style="display: block; margin-top: 14px;">
+        Generating links for {{ selectedStaffIds.length }} teacher(s). Bulk processing may take some time. Please wait…
+      </n-text>
       <n-text v-if="!magicLinkTeachersLoading && magicLinkTeachers.length === 0" type="warning" style="display: block; margin-top: 14px;">No teachers with a staff ID were found.</n-text>
       <div v-if="magicLinkResults.length > 0" class="magic-link-results">
         <n-card v-for="result in magicLinkResults" :key="result.staffId" size="small">
@@ -142,7 +145,7 @@ async function loadMagicLinkTeachers(): Promise<void> {
 }
 
 async function generateMagicLinks(): Promise<void> {
-  if (selectedStaffIds.value.length === 0) return;
+  if (magicLinksGenerating.value || magicLinkTeachersLoading.value || selectedStaffIds.value.length === 0) return;
   magicLinksGenerating.value = true;
   magicLinkResults.value = [];
   try {
@@ -150,8 +153,11 @@ async function generateMagicLinks(): Promise<void> {
     if (!result.success) throw new Error(result.error || 'Failed to generate Magic Links.');
     magicLinkResults.value = result.data ?? [];
     const successCount = magicLinkResults.value.filter(item => Boolean(item.link)).length;
-    if (successCount > 0) message.success(`${successCount} Magic Link(s) generated. No email was sent.`);
-    if (successCount === 0) message.error('No Magic Links were generated.');
+    const failureCount = magicLinkResults.value.length - successCount;
+    const summary = `Completed: ${successCount} succeeded, ${failureCount} failed. No email was sent.`;
+    if (successCount === 0) message.error(`No Magic Links were generated. ${summary}`);
+    else if (failureCount > 0) message.warning(summary);
+    else message.success(summary);
   } catch (error) {
     message.error(error instanceof Error ? error.message : 'Failed to generate Magic Links.');
   } finally {
