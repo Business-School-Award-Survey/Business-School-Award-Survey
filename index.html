@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UWA Business School — Teaching Award Nomination</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Vue 3 + Naive UI CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/naive-ui"></script>
+
+  <!-- Project styles -->
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+  <div id="app" v-cloak>
+    <n-config-provider :theme-overrides="themeOverrides">
+      <header class="header">
+        <div class="header-logo">U</div>
+        <div class="header-text">
+          <h1>UWA Business School</h1>
+          <p>Teaching &amp; Learning Nominations</p>
+        </div>
+      </header>
+
+      <main class="main">
+        <div class="page-title">
+          <h2>Nominate a Teacher</h2>
+          <p>If you wish to nominate teachers for a Learning &amp; Teaching Award, complete this nomination form.</p>
+          <p>This nomination form will take less than 5 mins to complete.</p>
+          <p>Your name and student ID will not be disclosed to your nominees and selection panel</p>
+          <div class="divider"></div>
+        </div>
+
+        <n-card class="nomination-card" :bordered="false">
+          <template v-if="periodChecking">
+            <n-spin size="large">
+              <div class="period-checking">Checking whether nominations are currently open...</div>
+            </n-spin>
+          </template>
+
+          <template v-else-if="!nominationOpen">
+            <n-result
+              status="warning"
+              title="Current nominations are not open"
+              :description="periodClosedMessage"
+            >
+              <template #footer>
+                <div v-if="activePeriod" class="period-detail-box">
+                  <div v-if="activePeriod.name"><strong>Award period:</strong> {{ activePeriod.name }}</div>
+                  <div><strong>Nomination opens:</strong> {{ formatDateTime(activePeriod.nomination_open_at) }}</div>
+                  <div><strong>Nomination closes:</strong> {{ formatDateTime(activePeriod.nomination_close_at) }}</div>
+                </div>
+              </template>
+            </n-result>
+          </template>
+
+          <template v-else-if="!submitted">
+            <div class="card-intro">
+              Please complete all required fields. Use the nominee search box to select a UWA Business School academic staff member from the list.
+            </div>
+
+            <n-form
+              ref="formRef"
+              :model="form"
+              :rules="rules"
+              label-placement="top"
+              require-mark-placement="right-hanging"
+              size="large"
+            >
+              <n-form-item label="Student Name" path="studentName">
+                <n-input
+                  v-model:value="form.studentName"
+                  placeholder="e.g. Jane Smith"
+                  clearable
+                />
+              </n-form-item>
+
+              <n-form-item label="Student ID" path="studentId">
+                <n-input
+                  v-model:value="form.studentId"
+                  placeholder="e.g. 12345678"
+                  clearable
+                />
+              </n-form-item>
+
+              <n-form-item label="Who would you like to nominate for Teaching &amp; Learning Award ? only applies to UWA Business School academic staff" path="scholarId">
+                <n-select
+                  v-model:value="form.scholarId"
+                  filterable
+                  remote
+                  clearable
+                  :loading="scholarLoading"
+                  :options="scholarOptions"
+                  placeholder="e.g. JOHN DOE"
+                  @search="handleScholarSearch"
+                  @update:value="handleScholarSelect"
+                />
+
+                <div v-if="selectedScholar" class="selected-scholar-box">
+                  Selected: {{ selectedScholarInfo }}
+                </div>
+              </n-form-item>
+
+              <n-form-item label="What is the unit code?" path="unitCode">
+                <div class="unit-code-search-box">
+                  <n-input-group>
+                    <n-input
+                      v-model:value="form.unitCode"
+                      placeholder="e.g. MKTG2200 or ACCT9800"
+                      clearable
+                      @input="handleUnitCodeInput"
+                      @keyup.enter="searchByUnitCode"
+                    />
+                    <n-button
+                      type="primary"
+                      ghost
+                      :loading="unitSearchLoading"
+                      @click="searchByUnitCode"
+                    >
+                      Search Unit
+                    </n-button>
+                  </n-input-group>
+                  <div class="unit-helper">
+                    Search the unit code to view related UWA Business School academic staff before choosing the nominee.
+                  </div>
+                </div>
+              </n-form-item>
+
+              <n-card
+                v-if="unitSearchPerformed"
+                size="small"
+                class="unit-search-panel"
+                :bordered="true"
+              >
+                <template #header>
+                  Related academic staff for {{ lastUnitSearchQuery }}
+                </template>
+                <template #header-extra>
+                  <n-tag :type="unitResults.length ? 'success' : 'warning'" size="small">
+                    {{ unitResults.length }} found
+                  </n-tag>
+                </template>
+
+                <n-alert
+                  v-if="unitResults.length === 0"
+                  type="warning"
+                  :show-icon="false"
+                >
+                  No academic staff were found for this unit code. Please check the code or search by nominee name above.
+                </n-alert>
+
+                <n-list v-else hoverable>
+                  <n-list-item v-for="scholar in unitResults" :key="scholar[dbFields.scholarPrimaryKey]">
+                    <div class="unit-result-name">{{ scholar.name }}</div>
+                    <div class="unit-result-meta">
+                      {{ [scholar.unit, scholar.unit_name, scholar.teaching_period, scholar.role_of_unit].filter(Boolean).join(' · ') }}
+                    </div>
+                    <div class="unit-result-action">
+                      <n-button
+                        size="small"
+                        type="primary"
+                        secondary
+                        @click="applyScholarToForm(scholar)"
+                      >
+                        Use this nominee
+                      </n-button>
+                    </div>
+                  </n-list-item>
+                </n-list>
+              </n-card>
+
+              <n-form-item label="What is the unit name?" path="unitName">
+                <n-input
+                  v-model:value="form.unitName"
+                  placeholder="e.g. Taxation or Social Media Marketing"
+                  clearable
+                />
+              </n-form-item>
+
+              <n-form-item label="What teaching period did you complete for this unit?" path="teachingPeriod">
+                <n-input
+                  v-model:value="form.teachingPeriod"
+                  placeholder="e.g. Semester 1, 2026"
+                  clearable
+                />
+              </n-form-item>
+
+              <n-form-item label="What is the role of the academic you are nominating?" path="roleOfUnit">
+                <n-input
+                  v-model:value="form.roleOfUnit"
+                  placeholder="e.g. Unit Coordinator, Lecturer, Tutor"
+                  clearable
+                />
+              </n-form-item>
+
+              <n-form-item label="Statement of support: Please write in no less than 25 words why are you nominating this person?" path="statementSupport">
+                <n-input
+                  v-model:value="form.statementSupport"
+                  type="textarea"
+                  placeholder="Describe what makes this person exceptional — their teaching style, impact on your learning, or specific examples..."
+                  :autosize="{ minRows: 5, maxRows: 10 }"
+                />
+                <div class="word-count" :class="{ ok: statementWordCount >= 25 }">
+                  {{ statementWordCount }} / 25 words minimum
+                </div>
+              </n-form-item>
+
+              <div class="submit-area">
+                <n-button
+                  type="primary"
+                  size="large"
+                  block
+                  :loading="submitting"
+                  @click="submitNomination"
+                >
+                  Submit Nomination
+                </n-button>
+              </div>
+            </n-form>
+          </template>
+
+          <template v-else>
+            <n-result
+              status="success"
+              title="Nomination Submitted!"
+              description="Thank you for recognising great teaching. Your nomination has been recorded successfully."
+            >
+              <template #footer>
+                <n-button type="primary" ghost @click="resetForm">
+                  Submit Another
+                </n-button>
+              </template>
+            </n-result>
+          </template>
+        </n-card>
+
+        <div class="footer">
+          UWA Business School · Teaching &amp; Learning Nominations
+        </div>
+      </main>
+    </n-config-provider>
+  </div>
+
+  <!-- Project scripts: load in this order -->
+  <script src="./js/config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
